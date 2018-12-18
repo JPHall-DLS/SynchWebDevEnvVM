@@ -1,46 +1,62 @@
+# The MariaDB root user has no password on installation.
+# Set the root user password if the login root without password is accepted i.e. no password has been set.
+# Update the root user password if /root/.my.cnf file exists.
 
-# Think that on install there is no root password set,
-# so we need to change this (at least)
-
-- name: Change the default root password
-  command: mysqladmin -u root password {{mysql_root_password}}
-
-- name: Add credentials for root user my.cnf
-  template: src=files/mysql/my.cnf.j2 dest=/root/.my.cnf owner=root group=root mode=0600
-
-- name: Setup admin users and hosts
+- name: Set root user password for all hosts
   mysql_user:
     name: root
-    password: "{{ mysql_root_password }}"
-    state: present
-    host: "{{ item }}"
-  with_items:
-    - localhost
-    - 127.0.0.1
-    - ::1
+    password: "{{mysql_root_password}}"
+    host_all: yes
+    check_implicit_admin: true
 
-- name: Remove anonymous users
-  command: 'mysql -ne "{{ item }}"'
-  with_items:
-    - DELETE FROM mysql.user WHERE user=''
-  changed_when: False
+- name: Create my.cnf file with user-specific options
+  template:
+    src: files/mysql/my.user.cnf.j2
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0600 # MariaDB will disregard file if either group or public has write permission
+  register: my_user_cnf_status
 
-- name: Disallow remote root login
-  command: 'mysql -ne "{{ item }}"'
-  with_items:
-    - DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')
-  changed_when: false
+- name: Copy my.cnf file with global options
+  copy:
+    src: files/mysql/my.global.cnf.j2
+    dest: /etc/my.cnf
+    owner: root
+    group: root
+    mode: 0604 # MariaDB cannot read file unless public has read permission
+  register: my_global_cnf_status
+
+- name: Delete redundant my.cnf.d directory
+  file:
+    path: /etc/my.cnf.d
+    state: absent
+  when: my_user_cnf_status.changed or my_global_cnf_status.changed
+
+- name: Restart MariaDB server after my.cnf change
+  service:
+    name: mariadb
+    state: restarted
+    enabled: yes
+  when: my_user_cnf_status.changed or my_global_cnf_status.changed
+
+- name: Remove all anonymous users
+  mysql_user:
+    name: ""
+    host_all: yes
+    state: absent
 
 - name: Remove test database
-  command: 'mysql -ne "{{ item }}"'
-  with_items:
-    - DROP DATABASE test
-    - DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%'
-  changed_when: False
-  ignore_errors: True
+  mysql_db:
+    name: "test"
+    state: absent
+  register: test_database_removal_status
 
-- name: Reload Privilege Tables
-  command: 'mysql -ne "{{ item }}"'
-  with_items:
-    - FLUSH PRIVILEGES
-  changed_when: False
+# Ansible lacks a MySQL equivalent of the postgresql_privs module...
+# Although the initial test database and all anonymous users are removed,
+# redundant database-level privileges remain in the mysql.db table.
+# See: SELECT host, db, user FROM mysql.db;
+
+- name: Remove database-level privileges for test database
+  command: "mysql -ne \"DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%'\""
+  when: test_database_removal_status.changed
