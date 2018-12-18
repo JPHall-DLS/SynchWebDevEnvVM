@@ -6,12 +6,21 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 #
-# Changed base box from centos/7 to geerlingguy to include guest additions for shared folder.
+
 Vagrant.configure("2") do |config|
-  config.vm.box = "geerlingguy/centos7"
+  # VirtualBox Guest Additions plugin required
+  unless Vagrant.has_plugin?("vagrant-vbguest")
+    abort "VirtualBox Guest Additions plugin is required. Please run `vagrant plugin install vagrant-vbguest`."
+  end
+
+  # CentOS 7 Vagrant box
+  # https://app.vagrantup.com/centos/boxes/7
+  config.vm.box = "centos/7"
+  config.vm.box_version = "1809.01"
+  # config.vm.box_version = "1811.02" # Unable to build VirtualBox Guest Additions kernel modules
 
   config.vm.define "lamp" do |lamp|
-    # accessing "localhost:8080" will access port 80 on the guest machine.
+    # Requests to "localhost:9080" forward to port 80 on the guest machine.
     lamp.vm.network "forwarded_port", guest: 80, host: 9080
     lamp.vm.network "forwarded_port", guest: 3306, host: 3306
     lamp.vm.network "private_network", ip: "192.168.33.10"
@@ -23,6 +32,7 @@ Vagrant.configure("2") do |config|
     lamp.vm.synced_folder "src/", "/var/www/sites/"
 
     lamp.vm.provision "ansible" do |ansible|
+      ansible.compatibility_mode = "2.0"
       ansible.playbook = "../playbooks/standalone.yml"
     end
   end
