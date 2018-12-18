@@ -1,0 +1,19 @@
+# MariaDB global options
+# /etc/my.cnf
+
+# Note: MariaDB cannot read file unless public has read permission
+
+[client]
+# Verify with “mysqlcheck --print-defaults”
+default-character-set = utf8
+
+[mysqld]
+# Verify with “mysqld --print-defaults”
+collation-server = utf8_unicode_ci
+character-set-filesystem = utf8
+character-set-server = utf8
+skip-character-set-client-handshake # Ensures collation_connection is utf8_unicode_ci
+default-time-zone = +00:00 # UTC/GMT
+
+# Disable symbolic-links to prevent assorted security risks
+symbolic-links = false
