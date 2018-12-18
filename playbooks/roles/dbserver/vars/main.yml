@@ -1,3 +1,6 @@
 # Variables only required under this role
 mysql_root_password: integration
 
+# ISPyB database version
+# https://github.com/DiamondLightSource/ispyb-database
+ispyb_db_version: master # v1.1.0
