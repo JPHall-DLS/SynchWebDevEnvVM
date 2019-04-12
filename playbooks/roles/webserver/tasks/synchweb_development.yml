@@ -17,11 +17,11 @@
     ignore_errors: yes
 
   - name: Copy dependencies across (until php composer ready)
-    copy: src=files/SynchWeb/lib.zip dest="{{ synchweb_home}}/api/" owner=vagrant group=vagrant mode=0644
+    copy: src=files/SynchWeb/lib-2018-11-14.zip dest="{{ synchweb_home}}/api/" owner=vagrant group=vagrant mode=0644
 
   - name: Unarchive the dependencies
     unarchive:
-      src: "{{ synchweb_home}}/api/lib.zip"
+      src: "{{ synchweb_home}}/api/lib-2018-11-14.zip"
       dest: "{{ synchweb_home}}/api/"
       remote_src: yes
 
