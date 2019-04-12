@@ -16,8 +16,7 @@ Vagrant.configure("2") do |config|
   # CentOS 7 Vagrant box
   # https://app.vagrantup.com/centos/boxes/7
   config.vm.box = "centos/7"
-  config.vm.box_version = "1809.01"
-  # config.vm.box_version = "1811.02" # Unable to build VirtualBox Guest Additions kernel modules
+  config.vm.box_version = "1902.01"
 
   config.vm.define "lamp" do |lamp|
     # Requests to "localhost:9080" forward to port 80 on the guest machine.
