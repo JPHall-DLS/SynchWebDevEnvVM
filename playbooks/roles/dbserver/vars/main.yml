@@ -3,4 +3,4 @@ mysql_root_password: integration
 
 # ISPyB database version
 # https://github.com/DiamondLightSource/ispyb-database
-ispyb_db_version: master # v1.1.0
+ispyb_db_version: v1.6.2
